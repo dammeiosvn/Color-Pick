@@ -380,7 +380,7 @@
     <!-- Toast Banner Thông Báo Sao Chép -->
     <div id="toastBanner">Đã sao chép thành công mã màu #050505</div>
 
-    <!-- Modal Popup Danh sách Phím tắt từ data/shortcus.json -->
+    <!-- Modal Popup Danh sách Phím tắt từ data/shortcuts.json -->
     <div id="shortcutModal">
         <div class="modal-content">
             <div class="modal-header">⚡ Chọn Phím Tắt iOS</div>
@@ -751,14 +751,14 @@
             }
         }
 
-        // Tải danh sách phím tắt từ data/shortcus.json
+        // Tải danh sách phím tắt từ data/shortcuts.json
         async function fetchShortcuts() {
             try {
                 const response = await fetch('./data/shortcuts.json');
                 const data = await response.json();
                 renderShortcutList(data.shortcuts || []);
             } catch (err) {
-                shortcutListContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); font-size:13px; padding:10px;">Không tìm thấy tệp data/shortcus.json</div>';
+                shortcutListContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); font-size:13px; padding:10px;">Không tìm thấy tệp data/shortcuts.json</div>';
             }
         }
 
