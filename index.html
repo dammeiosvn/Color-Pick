@@ -754,7 +754,7 @@
         // Tải danh sách phím tắt từ data/shortcus.json
         async function fetchShortcuts() {
             try {
-                const response = await fetch('./data/shortcus.json');
+                const response = await fetch('./data/shortcuts.json');
                 const data = await response.json();
                 renderShortcutList(data.shortcuts || []);
             } catch (err) {
