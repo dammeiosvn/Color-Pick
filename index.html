@@ -192,7 +192,19 @@
         /* Adjust Panel */
         #adjustPanel { background: var(--card-bg); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; }
         .preview-row { display: flex; align-items: center; gap: 12px; }
-        #colorSwatch { width: 58px; height: 58px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); background-color: #fff; flex-shrink: 0; transition: transform 0.15s; }
+        
+        /* Swatch & chữ "chọn màu" bên dưới */
+        .swatch-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        #colorSwatch { width: 58px; height: 58px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); background-color: #fff; transition: transform 0.15s; }
+        .swatch-label { font-size: 10px; font-weight: 500; color: var(--text-secondary); user-select: none; }
+
         .color-info-container { flex: 1; display: flex; flex-direction: column; gap: 6px; }
         #hexDisplay { font-size: 20px; font-weight: 700; word-break: break-all; user-select: all; padding: 6px 12px; background: var(--input-bg); border-radius: 10px; width: 100%; color: var(--text-main); }
         #extraInfoDisplay { font-size: 11px; color: var(--text-secondary); font-family: monospace; padding: 4px 12px; background: var(--input-bg); border-radius: 8px; width: 100%; }
@@ -203,7 +215,7 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-color); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
         #alphaSlider { background: linear-gradient(to right, rgba(0,0,0,0), var(--text-main)); }
 
-        /* Bố cục 2 nút bấm ở dưới (Chọn từ ảnh & Màu hệ thống) */
+        /* Bố cục 2 nút bấm ở dưới */
         .bottom-actions-bar {
             display: flex;
             gap: 10px;
@@ -211,6 +223,7 @@
         }
         .action-btn {
             flex: 1;
+            position: relative;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-main);
@@ -224,11 +237,23 @@
             gap: 6px;
             cursor: pointer;
             box-shadow: var(--shadow);
+            overflow: hidden;
             transition: transform 0.1s, background 0.2s;
         }
         .action-btn:active { transform: scale(0.97); background: var(--input-bg); }
 
-        /* Khung hiển thị ảnh & Lưới 20 màu (5x4) trích xuất từ ảnh */
+        /* Đảm bảo input type="color" phủ kín nút hệ thống để kích hoạt trực tiếp trên iOS */
+        #nativeColorInput {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+            cursor: pointer;
+        }
+
+        /* Khung hiển thị ảnh & Lưới 20 màu (5x4) */
         #imagePaletteContainer {
             background: var(--card-bg);
             border-radius: 18px;
@@ -265,7 +290,6 @@
         }
         .extracted-chip:active { transform: scale(0.9); }
 
-        /* Ghi chú & bản quyền */
         .note {
             font-size: 11px;
             color: var(--text-secondary);
@@ -325,7 +349,11 @@
 
         <div id="adjustPanel">
             <div class="preview-row">
-                <div id="colorSwatch"></div>
+                <!-- Ô màu xem trước có kèm chữ "chọn màu" bên dưới và gán sự kiện sao chép -->
+                <div class="swatch-wrapper" id="swatchWrapper">
+                    <div id="colorSwatch"></div>
+                    <span class="swatch-label">chọn màu</span>
+                </div>
                 <div class="color-info-container">
                     <div id="hexDisplay">#000000</div>
                     <div id="extraInfoDisplay">RGB(0,0,0) | HSL(0,0%,0%)</div>
@@ -340,26 +368,27 @@
                 <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1">
             </div>
 
-            <!-- Hai nút bấm theo yêu cầu (Nút trái: Chọn từ ảnh | Nút phải: Màu hệ thống) -->
+            <!-- Hai nút bấm dưới chân panel -->
             <div class="bottom-actions-bar">
                 <button class="action-btn" id="pickFromImageBtn">
                     🖼️ Chọn từ ảnh
                 </button>
                 <button class="action-btn" id="systemColorBtn">
                     🎨 Màu hệ thống
+                    <!-- Đặt thẻ input type="color" phủ kín nút để iOS gọi trực tiếp hệ thống chuẩn xác -->
+                    <input type="color" id="nativeColorInput" value="#007AFF">
                 </button>
             </div>
 
             <div class="note">
-                <div>Ghi chú : Chạm để chọn và tự động sao chép mã màu</div>
+                <div>Ghi chú : Chạm vào ô màu hoặc bảng để sao chép mã màu</div>
                 <div>©️ —•𝘴𝘦𝘯𝘵𝘦𝘤𝘩𝘵𝘪𝘱𝘴𝘷𝘯—</div>
             </div>
         </div>
     </div>
 
-    <!-- Hidden Inputs cho File Image và Native Color Picker -->
+    <!-- Hidden Input chọn file ảnh -->
     <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
-    <input type="color" id="nativeColorInput" style="display: none;">
 
     <script>
         const introScreen = document.getElementById('introScreen');
@@ -370,6 +399,7 @@
         const pickerCanvas = document.getElementById('pickerCanvas');
         const crosshair = document.getElementById('crosshair');
         const colorSwatch = document.getElementById('colorSwatch');
+        const swatchWrapper = document.getElementById('swatchWrapper');
         const hexDisplay = document.getElementById('hexDisplay');
         const extraInfoDisplay = document.getElementById('extraInfoDisplay');
         const brightnessSlider = document.getElementById('brightnessSlider');
@@ -381,7 +411,6 @@
         const historyAddBtn = document.getElementById('historyAddBtn');
 
         const pickFromImageBtn = document.getElementById('pickFromImageBtn');
-        const systemColorBtn = document.getElementById('systemColorBtn');
         const imageFileInput = document.getElementById('imageFileInput');
         const nativeColorInput = document.getElementById('nativeColorInput');
         const imagePaletteContainer = document.getElementById('imagePaletteContainer');
@@ -453,6 +482,7 @@
             alpha = 1;
             updatePanel();
             hexInput.value = rgbToHex(r, g, b);
+            nativeColorInput.value = rgbToHex(r, g, b);
         }
 
         function updatePanel() {
@@ -614,7 +644,8 @@
         }
 
         function addToHistory() {
-            const newColor = { r: currentBaseColor.r, g: currentBaseColor.g, b: currentBaseColor.b };
+            const adjusted = getAdjustedColor();
+            const newColor = { r: adjusted.r, g: adjusted.g, b: adjusted.b };
             if (!colorHistory.some(c => c.r === newColor.r && c.g === newColor.g && c.b === newColor.b)) {
                 colorHistory.unshift(newColor);
                 if (colorHistory.length > 10) colorHistory.pop();
@@ -655,7 +686,18 @@
             brightnessSlider.addEventListener('input', (e) => { brightnessFactor = parseFloat(e.target.value); updatePanel(); });
             alphaSlider.addEventListener('input', (e) => { alpha = parseFloat(e.target.value); updatePanel(); });
 
-            // Xử lý nút "Chọn từ ảnh" -> Mở trình chọn tệp ảnh
+            // Xử lý khi chạm vào ô màu xem trước hoặc chữ "chọn màu" bên dưới -> Sao chép mã màu
+            const handleSwatchClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const adjusted = getAdjustedColor();
+                copyColorHex(adjusted.r, adjusted.g, adjusted.b);
+                addToHistory();
+            };
+            swatchWrapper.addEventListener('click', handleSwatchClick);
+            swatchWrapper.addEventListener('touchend', handleSwatchClick);
+
+            // Nút "Chọn từ ảnh"
             pickFromImageBtn.addEventListener('click', () => {
                 imageFileInput.click();
             });
@@ -669,7 +711,6 @@
                     userImagePreview.onload = function() {
                         try {
                             const colorThief = new ColorThief();
-                            // Lấy tối đa 20 màu chủ đạo từ ảnh
                             const palette = colorThief.getPalette(userImagePreview, 20);
                             extractedGrid20.innerHTML = '';
                             palette.forEach(([r, g, b]) => {
@@ -698,11 +739,7 @@
                 reader.readAsDataURL(file);
             });
 
-            // Xử lý nút "Màu hệ thống" -> Kích hoạt Native Color Picker
-            systemColorBtn.addEventListener('click', () => {
-                nativeColorInput.click();
-            });
-
+            // Xử lý chọn màu hệ thống trực tiếp từ input[type=color] phủ trên nút
             nativeColorInput.addEventListener('input', (e) => {
                 let val = e.target.value;
                 if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
