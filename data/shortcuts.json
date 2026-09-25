@@ -1,0 +1,25 @@
+{
+  "shortcuts": [
+    {
+      "id": "create_symbol_icon",
+      "name": "Tao Icon Symbol",
+      "displayName": "Tạo Icon Symbol",
+      "icon": "🎨",
+      "description": "Nhận mã màu để tạo icon tuỳ biến theo dạng Apple Symbol"
+    },
+    {
+      "id": "change_text_color",
+      "name": "DoiMauChu",
+      "displayName": "Đổi màu chữ giao diện",
+      "icon": "✍️",
+      "description": "Áp dụng mã màu vừa chọn vào thuộc tính màu chữ của dự án"
+    },
+    {
+      "id": "scriptable_widget_color",
+      "name": "Scriptable Color",
+      "displayName": "Cập nhật màu Widget",
+      "icon": "📱",
+      "description": "Truyền mã màu sang Scriptable để đổi màu nền màn hình chính"
+    }
+  ]
+}
