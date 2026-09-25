@@ -9,45 +9,54 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Color Pick">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23007AFF'/><text x='505' y='55' font-size='50' text-anchor='middle' dominant-baseline='central' fill='white'>🎨</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23007AFF'/><text x='50' y='55' font-size='50' text-anchor='middle' dominant-baseline='central' fill='white'>🎨</text></svg>">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
     <style>
-        /* Thiết kế Hệ thống Màu Tự động (Dark/Light Mode theo hệ thống) */
         :root {
-            --bg-color: #f2f2f7;
-            --card-bg: #ffffff;
-            --text-main: #000000;
-            --text-secondary: #6e6e73;
-            --border-color: #e5e5ea;
-            --input-bg: #f5f5f7;
-            --accent-color: #007aff;
-            --shadow: 0 4px 16px rgba(0,0,0,0.06);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #000000;
-                --card-bg: #1c1c1e;
-                --text-main: #ffffff;
-                --text-secondary: #8e8e93;
-                --border-color: #38383a;
-                --input-bg: #2c2c2e;
-                --accent-color: #0a84ff;
-                --shadow: 0 4px 16px rgba(0,0,0,0.3);
-            }
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --text-main: #ffffff;
+            --text-secondary: #8e8e93;
+            --border-color: #38383a;
+            --input-bg: #2c2c2e;
+            --accent-color: #0a84ff;
+            --shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
 
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background:var(--bg-color); color:var(--text-main); padding:12px 12px 30px; transition: background 0.3s, color 0.3s; }
-        
-        /* Toast Notification (Cảnh báo thành công trên cùng màn hình) */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: calc(env(safe-area-inset-top, 20px) + 16px) 16px 40px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            opacity: 0;
+            transform: scale(0.98);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .app-container.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Toast Notification (Cảnh báo thành công trên cùng) */
         #toastBanner {
             position: fixed;
             top: -60px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(28, 28, 30, 0.85);
+            background: rgba(44, 44, 46, 0.9);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             color: #ffffff;
@@ -55,13 +64,13 @@
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
             z-index: 10000;
             transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 0.5px solid rgba(255,255,255,0.15);
             white-space: nowrap;
         }
-        #toastBanner.show { top: 16px; }
+        #toastBanner.show { top: calc(env(safe-area-inset-top, 20px) + 10px); }
 
         /* Intro Screen (Màn hình khởi chạy) */
         #introScreen {
@@ -73,29 +82,35 @@
             align-items: center;
             justify-content: center;
             z-index: 99999;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #introScreen.fade-out {
+            opacity: 0;
+            visibility: hidden;
         }
         .intro-title {
-            font-size: 36px;
+            font-size: 38px;
             font-weight: 700;
             letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 16px;
             color: var(--text-main);
         }
-        .intro-subtitle-container {
+        
+        /* Nút "Chọn màu" trên Intro với hiệu ứng cầu vồng loé sáng đúng yêu cầu */
+        .intro-btn-wrapper {
             position: relative;
-            padding: 4px 12px;
+            padding: 4px;
+            border-radius: 14px;
+            cursor: pointer;
         }
-        /* Hiệu ứng cầu vồng loé sáng bao quanh */
-        .intro-subtitle-container::before {
+        .intro-btn-wrapper::before {
             content: '';
             position: absolute;
-            inset: -4px;
-            border-radius: 12px;
+            inset: -2px;
+            border-radius: 16px;
             background: linear-gradient(90deg, #ff3b30, #ff9500, #ffcc00, #34c759, #007aff, #af52de, #ff2d55);
             background-size: 400% 400%;
-            animation: rainbowGlow 1.5s linear infinite;
-            z-index: -1;
+            animation: rainbowGlow 2s linear infinite;
             filter: blur(6px);
             opacity: 0.9;
         }
@@ -104,32 +119,69 @@
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-        .intro-subtitle {
+        .intro-btn {
+            position: relative;
+            background: var(--card-bg);
+            color: var(--text-main);
             font-size: 16px;
             font-weight: 600;
-            color: var(--text-main);
-            background: var(--card-bg);
-            padding: 6px 14px;
-            border-radius: 8px;
-            overflow: hidden;
-            white-space: nowrap;
-            display: inline-block;
-            direction: rtl; /* Hỗ trợ hiệu ứng hiện từng chữ từ phải sang trái */
-            text-align: right;
-            width: 0ch;
-            animation: typingRightToLeft 1.5s steps(13, end) forwards;
-        }
-        @keyframes typingRightToLeft {
-            to { width: 14ch; }
+            padding: 12px 28px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        /* Giao diện chính */
-        #imageContainer { text-align:center; margin-bottom:12px; display:none; }
-        #preview { width:100%; max-width:400px; border-radius:12px; box-shadow:var(--shadow); display:block; margin:0 auto; }
-        #extractedColors { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:12px; display:none; }
-        .color-chip { width:40px; height:40px; border-radius:8px; border:2px solid transparent; transition:transform 0.1s, border-color 0.1s; cursor:pointer; }
-        .color-chip.selected { border-color:var(--accent-color); transform:scale(1.1); }
-        .color-chip.copied { animation: copyFlash 0.3s ease; }
+        /* Top Bar (Lưới / Phổ, Hex) */
+        .top-bar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: var(--card-bg); 
+            padding: 10px 14px; 
+            border-radius: 16px; 
+            box-shadow: var(--shadow); 
+            gap: 8px; 
+        }
+        .toggle-wrapper { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text-secondary); flex-shrink: 0; }
+        
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-pill { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a3a3c; transition: .3s; border-radius: 22px; }
+        .slider-pill:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider-pill { background-color: var(--accent-color); }
+        input:checked + .slider-pill:before { transform: translateX(18px); }
+        
+        .hex-input-wrapper { display: flex; align-items: center; justify-content: flex-end; }
+        #hexInput { 
+            padding: 8px 12px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 10px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            background: var(--input-bg); 
+            color: var(--text-main); 
+            width: 110px; 
+            text-align: center; 
+            outline: none; 
+        }
+        #hexInput:focus { border-color: var(--accent-color); }
+
+        /* Picker Canvas Container */
+        #pickerContainer { position: relative; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); background: var(--card-bg); }
+        #pickerCanvas { display: block; width: 100%; height: 260px; touch-action: none; cursor: crosshair; }
+        .picker-crosshair { position: absolute; width: 24px; height: 24px; border: 2px solid #fff; border-radius: 50%; pointer-events: none; transform: translate(-50%,-50%); box-shadow: 0 0 6px rgba(0,0,0,0.6); display: none; z-index: 2; }
+
+        /* Color History Container */
+        #historyContainer { background: var(--card-bg); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px; overflow-x: auto; white-space: nowrap; }
+        .history-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-right: 4px; flex-shrink: 0; }
+        .history-chip { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0; transition: transform 0.1s; }
+        .history-chip.copied { animation: copyFlash 0.3s ease; }
+        #historyAddBtn { width: 32px; height: 32px; border-radius: 8px; background: var(--text-main); color: var(--bg-color); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 300; cursor: pointer; flex-shrink: 0; border: none; transition: opacity 0.2s; }
+        #historyAddBtn:active { opacity: 0.7; }
 
         @keyframes copyFlash {
             0% { opacity: 1; transform: scale(1); }
@@ -137,78 +189,27 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Top Bar & Apple Native Color Picker Button */
-        .top-bar { display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); padding:10px 14px; border-radius:14px; margin-bottom:12px; box-shadow:var(--shadow); gap:8px; }
-        .toggle-wrapper { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--text-secondary); flex-shrink:0; }
-        
-        .switch { position:relative; display:inline-block; width:36px; height:20px; }
-        .switch input { opacity:0; width:0; height:0; }
-        .slider-pill { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:20px; }
-        .slider-pill:before { position:absolute; content:""; height:16px; width:16px; left:2px; bottom:2px; background-color:white; transition:.4s; border-radius:50%; }
-        input:checked + .slider-pill { background-color:var(--accent-color); }
-        input:checked + .slider-pill:before { transform:translateX(16px); }
-        
-        .actions-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
-        #hexInput { padding:6px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; font-weight:600; background:var(--input-bg); color:var(--text-main); max-width:100px; text-align:center; outline:none; }
-        #hexInput:focus { border-color:var(--accent-color); }
-
-        /* Nút Color Picker chuẩn Apple */
-        .apple-picker-btn {
-            position: relative;
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-main);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .apple-picker-btn input[type="color"] {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            left: 0;
-            top: 0;
-            cursor: pointer;
-        }
-
-        #pickerContainer { position:relative; margin-bottom:12px; }
-        #pickerCanvas { display:block; width:100%; border-radius:14px; touch-action:none; box-shadow:var(--shadow); cursor:crosshair; }
-        .picker-crosshair { position:absolute; width:24px; height:24px; border:2px solid #fff; border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); box-shadow:0 0 6px rgba(0,0,0,0.5); display:none; z-index:2; }
-
-        /* Color History */
-        #historyContainer { background:var(--card-bg); border-radius:14px; padding:10px 14px; margin-bottom:12px; box-shadow:var(--shadow); display:flex; align-items:center; gap:8px; overflow-x:auto; white-space:nowrap; }
-        .history-label { font-size:12px; font-weight:500; color:var(--text-secondary); margin-right:4px; flex-shrink:0; }
-        .history-chip { width:30px; height:30px; border-radius:8px; border:1px solid var(--border-color); cursor:pointer; flex-shrink:0; transition:transform 0.1s; }
-        #historyAddBtn { width:30px; height:30px; border-radius:8px; background:var(--text-main); color:var(--card-bg); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:300; cursor:pointer; flex-shrink:0; border:none; transition:opacity 0.2s; }
-        #historyAddBtn:active { opacity:0.7; }
-
         /* Adjust Panel */
-        #adjustPanel { background:var(--card-bg); border-radius:16px; padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:12px; transition: background 0.3s; }
-        .preview-row { display:flex; align-items:center; gap:12px; }
-        #colorSwatch { width:56px; height:56px; border-radius:12px; border:1px solid rgba(0,0,0,0.1); background-color:#fff; flex-shrink:0; transition: transform 0.15s; }
+        #adjustPanel { background: var(--card-bg); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; }
+        .preview-row { display: flex; align-items: center; gap: 12px; }
+        #colorSwatch { width: 58px; height: 58px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); background-color: #fff; flex-shrink: 0; transition: transform 0.15s; }
         #colorSwatch.copied { animation: copyFlash 0.3s ease; }
-        .color-info-container { flex:1; display:flex; flex-direction:column; gap:4px; }
-        #hexDisplay { font-size:20px; font-weight:700; word-break:break-all; user-select:all; padding:6px 12px; background:var(--input-bg); border-radius:8px; width:100%; color:var(--text-main); }
-        #extraInfoDisplay { font-size:12px; color:var(--text-secondary); font-family: monospace; padding:4px 12px; background:var(--input-bg); border-radius:8px; width:100%; }
+        .color-info-container { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        #hexDisplay { font-size: 20px; font-weight: 700; word-break: break-all; user-select: all; padding: 6px 12px; background: var(--input-bg); border-radius: 10px; width: 100%; color: var(--text-main); }
+        #extraInfoDisplay { font-size: 11px; color: var(--text-secondary); font-family: monospace; padding: 4px 12px; background: var(--input-bg); border-radius: 8px; width: 100%; }
         
-        .slider-group { display:flex; flex-direction:column; gap:6px; }
-        .slider-label { font-size:13px; font-weight:500; color:var(--text-secondary); }
-        input[type=range] { width:100%; height:6px; -webkit-appearance:none; border-radius:3px; background:var(--border-color); outline:none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:var(--accent-color); cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-        #alphaSlider { background:linear-gradient(to right, rgba(0,0,0,0), var(--text-main)); }
+        .slider-group { display: flex; flex-direction: column; gap: 6px; }
+        .slider-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+        input[type=range] { width: 100%; height: 6px; -webkit-appearance: none; border-radius: 3px; background: var(--border-color); outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-color); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        #alphaSlider { background: linear-gradient(to right, rgba(0,0,0,0), var(--text-main)); }
 
         /* Ghi chú & bản quyền */
         .note {
             font-size: 11px;
             color: var(--text-secondary);
             text-align: center;
-            margin-top: 4px;
+            margin-top: 2px;
             line-height: 1.5;
             user-select: none;
         }
@@ -216,82 +217,73 @@
 </head>
 <body>
 
-    <!-- Toast Banner Thông Báo Sao Chép Thành Công -->
+    <!-- Toast Banner Thông Báo Sao Chép -->
     <div id="toastBanner">Đã sao chép thành công mã màu #050505</div>
 
-    <!-- Màn hình Intro khởi chạy -->
+    <!-- Màn hình Intro khởi chạy theo yêu cầu -->
     <div id="introScreen">
         <h1 class="intro-title">Color Pick</h1>
-        <div class="intro-subtitle-container">
-            <span class="intro-subtitle">Sentechtipsvn</span>
+        <div class="intro-btn-wrapper" id="startBtn">
+            <button class="intro-btn">🎨 Chọn màu</button>
         </div>
     </div>
 
-    <div id="imageContainer">
-        <img id="preview" alt="Ảnh của bạn" crossorigin="anonymous">
-    </div>
-    <div id="extractedColors"></div>
-
-    <div class="top-bar">
-        <div class="toggle-wrapper">
-            <span>Lưới</span>
-            <label class="switch">
-                <input type="checkbox" id="modeToggle">
-                <span class="slider-pill"></span>
-            </label>
-            <span>Phổ</span>
-        </div>
-        <div class="actions-right">
-            <!-- Nút gọi Apple Native Color Picker chuẩn hệ thống -->
-            <button class="apple-picker-btn">
-                🎨 Chọn màu
-                <input type="color" id="nativeColorPicker" value="#007AFF">
-            </button>
-            <input type="text" id="hexInput" placeholder="#000000" maxlength="7">
-        </div>
-    </div>
-
-    <div id="pickerContainer">
-        <canvas id="pickerCanvas" width="480" height="400"></canvas>
-        <div class="picker-crosshair" id="crosshair"></div>
-    </div>
-
-    <div id="historyContainer">
-        <span class="history-label">Đã chọn:</span>
-        <div id="historyList" style="display:inline-flex; gap:6px; align-items:center;"></div>
-        <button id="historyAddBtn">+</button>
-    </div>
-
-    <div id="adjustPanel">
-        <div class="preview-row">
-            <div id="colorSwatch"></div>
-            <div class="color-info-container">
-                <div id="hexDisplay">#000000</div>
-                <div id="extraInfoDisplay">RGB(0,0,0) | HSL(0,0%,0%)</div>
+    <!-- Giao diện chính (mô phỏng Apple Control Center Palette) -->
+    <div class="app-container" id="appContainer">
+        <div class="top-bar">
+            <div class="toggle-wrapper">
+                <span>Lưới</span>
+                <label class="switch">
+                    <input type="checkbox" id="modeToggle">
+                    <span class="slider-pill"></span>
+                </label>
+                <span>Phổ</span>
+            </div>
+            <div class="hex-input-wrapper">
+                <input type="text" id="hexInput" placeholder="#000000" maxlength="7">
             </div>
         </div>
-        <div class="slider-group">
-            <div class="slider-label">Độ sáng (Brightness)</div>
-            <input type="range" id="brightnessSlider" min="0.3" max="1.7" step="0.01" value="1">
+
+        <div id="pickerContainer">
+            <canvas id="pickerCanvas" width="480" height="320"></canvas>
+            <div class="picker-crosshair" id="crosshair"></div>
         </div>
-        <div class="slider-group">
-            <div class="slider-label">Độ mờ (Alpha)</div>
-            <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1">
+
+        <div id="historyContainer">
+            <span class="history-label">Đã chọn:</span>
+            <div id="historyList" style="display:inline-flex; gap:6px; align-items:center;"></div>
+            <button id="historyAddBtn">+</button>
         </div>
-        <div class="note">
-            <div>Ghi chú : Chạm để chọn và sao chép mã màu</div>
-            <div>©️ —•𝘴𝘦𝘯𝘵𝘦𝘤𝘩𝘵𝘪𝘱𝘴𝘷𝘯—</div>
+
+        <div id="adjustPanel">
+            <div class="preview-row">
+                <div id="colorSwatch"></div>
+                <div class="color-info-container">
+                    <div id="hexDisplay">#000000</div>
+                    <div id="extraInfoDisplay">RGB(0,0,0) | HSL(0,0%,0%)</div>
+                </div>
+            </div>
+            <div class="slider-group">
+                <div class="slider-label">Độ sáng (Brightness)</div>
+                <input type="range" id="brightnessSlider" min="0.3" max="1.7" step="0.01" value="1">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label">Độ mờ (Alpha)</div>
+                <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1">
+            </div>
+            <div class="note">
+                <div>Ghi chú : Chạm để chọn và tự động sao chép mã màu</div>
+                <div>©️ —•𝘴𝘦𝘯𝘵𝘦𝘤𝘩𝘵𝘪𝘱𝘴𝘷𝘯—</div>
+            </div>
         </div>
     </div>
 
     <script>
-        const IMAGE_BASE64 = "test";
-
         const introScreen = document.getElementById('introScreen');
+        const startBtn = document.getElementById('startBtn');
+        const appContainer = document.getElementById('appContainer');
         const toastBanner = document.getElementById('toastBanner');
-        const imageContainer = document.getElementById('imageContainer');
-        const previewImg = document.getElementById('preview');
-        const extractedDiv = document.getElementById('extractedColors');
+        
         const pickerCanvas = document.getElementById('pickerCanvas');
         const crosshair = document.getElementById('crosshair');
         const colorSwatch = document.getElementById('colorSwatch');
@@ -302,14 +294,12 @@
         
         const modeToggle = document.getElementById('modeToggle');
         const hexInput = document.getElementById('hexInput');
-        const nativeColorPicker = document.getElementById('nativeColorPicker');
         const historyList = document.getElementById('historyList');
         const historyAddBtn = document.getElementById('historyAddBtn');
 
-        let currentBaseColor = { r:255, g:255, b:255 };
+        let currentBaseColor = { r: 255, g: 239, b: 179 }; // Default #FBEFB3
         let brightnessFactor = 1.0;
         let alpha = 1.0;
-        let selectedChip = null;
         let isSpectrumMode = false;
         let colorHistory = [];
         let touchStartPos = null;
@@ -324,8 +314,8 @@
             }, 2000);
         }
 
-        function rgbToHex(r,g,b) {
-            return '#' + [r,g,b].map(x => Math.round(x).toString(16).padStart(2,'0')).join('');
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => Math.round(x).toString(16).padStart(2, '0')).join('').toUpperCase();
         }
 
         function getAdjustedColor() {
@@ -349,36 +339,29 @@
                     case b: h = ((r - g) / d + 4) / 6; break;
                 }
             }
-            return [Math.round(h*360), Math.round(s*100), Math.round(l*100)];
+            return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
         }
 
-        function copyColorHex(r, g, b, element) {
-            const hex = rgbToHex(r, g, b).toUpperCase();
+        function copyColorHex(r, g, b) {
+            const hex = rgbToHex(r, g, b);
             navigator.clipboard.writeText(hex).then(() => {
                 showToast(hex);
-                if (element) {
-                    element.classList.add('copied');
-                    setTimeout(() => element.classList.remove('copied'), 300);
-                } else {
-                    colorSwatch.classList.add('copied');
-                    setTimeout(() => colorSwatch.classList.remove('copied'), 300);
-                }
+                colorSwatch.classList.add('copied');
+                setTimeout(() => colorSwatch.classList.remove('copied'), 300);
             }).catch(() => {
                 showToast(hex);
             });
         }
 
-        function setCurrentBaseColor(r,g,b) {
-            if(r === undefined) r=0; if(g === undefined) g=0; if(b === undefined) b=0;
+        function setCurrentBaseColor(r, g, b) {
+            if (r === undefined) r = 0; if (g === undefined) g = 0; if (b === undefined) b = 0;
             currentBaseColor = { r, g, b };
             brightnessSlider.value = 1;
             alphaSlider.value = 1;
             brightnessFactor = 1;
             alpha = 1;
             updatePanel();
-            const hex = rgbToHex(r, g, b).toUpperCase();
-            hexInput.value = hex;
-            nativeColorPicker.value = hex;
+            hexInput.value = rgbToHex(r, g, b);
         }
 
         function updatePanel() {
@@ -394,7 +377,7 @@
             } else {
                 colorSwatch.style.backgroundImage = 'none';
             }
-            hexDisplay.textContent = alpha < 1 ? `${hex.toUpperCase()} (α=${alpha.toFixed(2)})` : hex.toUpperCase();
+            hexDisplay.textContent = alpha < 1 ? `${hex} (α=${alpha.toFixed(2)})` : hex;
             extraInfoDisplay.textContent = `RGB(${adjusted.r}, ${adjusted.g}, ${adjusted.b}) | HSL(${hsl[0]}°, ${hsl[1]}%, ${hsl[2]}%)`;
         }
 
@@ -417,7 +400,7 @@
                 g = hue2rgb(p, q, h);
                 b = hue2rgb(p, q, h - 1/3);
             }
-            return [Math.round(r*255), Math.round(g*255), Math.round(b*255)];
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
         }
 
         const GRID_COLS = 12; 
@@ -487,8 +470,8 @@
             const scaleY = pickerCanvas.height / rect.height;
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = Math.max(0, Math.min(pickerCanvas.width-1, (clientX - rect.left) * scaleX));
-            const y = Math.max(0, Math.min(pickerCanvas.height-1, (clientY - rect.top) * scaleY));
+            const x = Math.max(0, Math.min(pickerCanvas.width - 1, (clientX - rect.left) * scaleX));
+            const y = Math.max(0, Math.min(pickerCanvas.height - 1, (clientY - rect.top) * scaleY));
 
             if (isSpectrumMode) {
                 const colNorm = x / pickerCanvas.width;
@@ -530,8 +513,8 @@
                 const triggerAction = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    copyColorHex(color.r, color.g, color.b, chip);
                     setCurrentBaseColor(color.r, color.g, color.b);
+                    copyColorHex(color.r, color.g, color.b);
                 };
                 chip.addEventListener('touchend', triggerAction);
                 chip.addEventListener('click', triggerAction);
@@ -543,17 +526,19 @@
             const newColor = { r: currentBaseColor.r, g: currentBaseColor.g, b: currentBaseColor.b };
             if (!colorHistory.some(c => c.r === newColor.r && c.g === newColor.g && c.b === newColor.b)) {
                 colorHistory.unshift(newColor);
-                if (colorHistory.length > 12) colorHistory.pop();
+                if (colorHistory.length > 10) colorHistory.pop();
                 renderHistory();
             }
         }
 
         function init() {
-            // Ẩn Intro sau 1.5 giây
-            setTimeout(() => {
-                introScreen.style.opacity = '0';
+            // Sự kiện bấm nút "Chọn màu" trên màn hình Intro
+            startBtn.addEventListener('click', () => {
+                introScreen.classList.add('fade-out');
+                appContainer.classList.add('active');
                 setTimeout(() => introScreen.remove(), 500);
-            }, 1500);
+                redrawCanvas();
+            });
 
             modeToggle.addEventListener('change', (e) => {
                 isSpectrumMode = e.target.checked;
@@ -561,29 +546,16 @@
                 hideCrosshair();
             });
 
-            // Xử lý chọn màu từ Apple Native Color Picker
-            nativeColorPicker.addEventListener('input', (e) => {
-                let val = e.target.value;
-                if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-                    const r = parseInt(val.substring(1,3), 16);
-                    const g = parseInt(val.substring(3,5), 16);
-                    const b = parseInt(val.substring(5,7), 16);
-                    setCurrentBaseColor(r, g, b);
-                    copyColorHex(r, g, b, null);
-                    addToHistory();
-                }
-            });
-
             hexInput.addEventListener('change', (e) => {
                 let val = e.target.value.trim();
                 if (val.startsWith('#')) val = val.substring(1);
-                if (val.length === 3) val = val.split('').map(c => c+c).join('');
+                if (val.length === 3) val = val.split('').map(c => c + c).join('');
                 if (val.length === 6 && /^[0-9A-Fa-f]{6}$/.test(val)) {
-                    const r = parseInt(val.substring(0,2), 16);
-                    const g = parseInt(val.substring(2,4), 16);
-                    const b = parseInt(val.substring(4,6), 16);
+                    const r = parseInt(val.substring(0, 2), 16);
+                    const g = parseInt(val.substring(2, 4), 16);
+                    const b = parseInt(val.substring(4, 6), 16);
                     setCurrentBaseColor(r, g, b);
-                    copyColorHex(r, g, b, null);
+                    copyColorHex(r, g, b);
                     addToHistory();
                 }
             });
@@ -609,7 +581,7 @@
                     const dx = touch.clientX - touchStartPos.x;
                     const dy = touch.clientY - touchStartPos.y;
                     if (Math.sqrt(dx*dx + dy*dy) < 10) {
-                        copyColorHex(currentBaseColor.r, currentBaseColor.g, currentBaseColor.b, null);
+                        copyColorHex(currentBaseColor.r, currentBaseColor.g, currentBaseColor.b);
                         addToHistory();
                     }
                 }
@@ -630,7 +602,7 @@
                     const dx = e.clientX - mouseDownPos.x;
                     const dy = e.clientY - mouseDownPos.y;
                     if (Math.sqrt(dx*dx + dy*dy) < 10) {
-                        copyColorHex(currentBaseColor.r, currentBaseColor.g, currentBaseColor.b, null);
+                        copyColorHex(currentBaseColor.r, currentBaseColor.g, currentBaseColor.b);
                         addToHistory();
                     }
                     mouseDownPos = null;
@@ -638,8 +610,8 @@
                 }
             });
 
-            redrawCanvas();
-            setCurrentBaseColor(0, 122, 255);
+            // Khởi tạo màu mặc định #FBEFB3 như ảnh mẫu của sếp
+            setCurrentBaseColor(251, 239, 179);
             addToHistory();
         }
 
