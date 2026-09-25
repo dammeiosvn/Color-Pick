@@ -193,7 +193,6 @@
         #adjustPanel { background: var(--card-bg); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; }
         .preview-row { display: flex; align-items: center; gap: 12px; }
         
-        /* Swatch & chữ "chọn màu" bên dưới */
         .swatch-wrapper {
             display: flex;
             flex-direction: column;
@@ -215,34 +214,36 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-color); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
         #alphaSlider { background: linear-gradient(to right, rgba(0,0,0,0), var(--text-main)); }
 
-        /* Bố cục 2 nút bấm ở dưới */
+        /* Hàng 3 nút bấm icon (48x48, nền trong suốt) song song nhau */
         .bottom-actions-bar {
             display: flex;
-            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
             width: 100%;
+            padding: 4px 0;
         }
-        .action-btn {
-            flex: 1;
+        .action-icon-btn {
+            width: 48px;
+            height: 48px;
+            background: transparent;
+            border: none;
+            padding: 0;
+            cursor: pointer;
             position: relative;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: 16px;
-            font-weight: 600;
-            font-size: 13px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            cursor: pointer;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: transform 0.1s, background 0.2s;
+            transition: transform 0.1s;
         }
-        .action-btn:active { transform: scale(0.97); background: var(--input-bg); }
-
-        /* Đảm bảo input type="color" phủ kín nút hệ thống để kích hoạt trực tiếp trên iOS */
+        .action-icon-btn:active {
+            transform: scale(0.9);
+        }
+        .action-icon-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
         #nativeColorInput {
             position: absolute;
             opacity: 0;
@@ -251,6 +252,80 @@
             left: 0;
             top: 0;
             cursor: pointer;
+        }
+
+        /* Modal Popup danh sách Phím tắt */
+        #shortcutModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #shortcutModal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 320px;
+            padding: 20px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal-header {
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-main);
+        }
+        .shortcut-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .shortcut-row {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .shortcut-row:active {
+            background: var(--accent-color);
+            color: #fff;
+        }
+        .modal-close-btn {
+            background: var(--border-color);
+            border: none;
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 4px;
         }
 
         /* Khung hiển thị ảnh & Lưới 20 màu (5x4) */
@@ -305,6 +380,17 @@
     <!-- Toast Banner Thông Báo Sao Chép -->
     <div id="toastBanner">Đã sao chép thành công mã màu #050505</div>
 
+    <!-- Modal Popup Danh sách Phím tắt từ data/shortcus.json -->
+    <div id="shortcutModal">
+        <div class="modal-content">
+            <div class="modal-header">⚡ Chọn Phím Tắt iOS</div>
+            <div class="shortcut-list" id="shortcutListContainer">
+                <div style="text-align:center; color:var(--text-secondary); font-size:13px; padding:10px;">Đang tải danh sách...</div>
+            </div>
+            <button class="modal-close-btn" id="closeModalBtn">Đóng</button>
+        </div>
+    </div>
+
     <!-- Màn hình Intro khởi chạy -->
     <div id="introScreen">
         <h1 class="intro-title">Color Pick</h1>
@@ -349,7 +435,6 @@
 
         <div id="adjustPanel">
             <div class="preview-row">
-                <!-- Ô màu xem trước có kèm chữ "chọn màu" bên dưới và gán sự kiện sao chép -->
                 <div class="swatch-wrapper" id="swatchWrapper">
                     <div id="colorSwatch"></div>
                     <span class="swatch-label">chọn màu</span>
@@ -368,15 +453,22 @@
                 <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1">
             </div>
 
-            <!-- Hai nút bấm dưới chân panel -->
+            <!-- Hàng 3 nút icon 48x48 trong suốt (Trái: Chọn từ ảnh | Giữa: Màu hệ thống | Phải: Chạy phím tắt) -->
             <div class="bottom-actions-bar">
-                <button class="action-btn" id="pickFromImageBtn">
-                    🖼️ Chọn từ ảnh
+                <!-- 1. Nút Chọn từ ảnh -->
+                <button class="action-icon-btn" id="pickFromImageBtn" title="Chọn từ ảnh">
+                    <img src="image/photo.png" alt="Ảnh" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%230A84FF%22><path d=%22M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z%22/></svg>'">
                 </button>
-                <button class="action-btn" id="systemColorBtn">
-                    🎨 Màu hệ thống
-                    <!-- Đặt thẻ input type="color" phủ kín nút để iOS gọi trực tiếp hệ thống chuẩn xác -->
+
+                <!-- 2. Nút Màu hệ thống -->
+                <button class="action-icon-btn" id="systemColorBtn" title="Màu hệ thống">
+                    <img src="image/colorsystem.png" alt="Màu hệ thống" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%230A84FF%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/><path d=%22M12 2a10 10 0 0 0-7.07 17.07l7.07-7.07V2z%22 fill=%22%23FF9500%22/></svg>'">
                     <input type="color" id="nativeColorInput" value="#007AFF">
+                </button>
+
+                <!-- 3. Nút Chạy phím tắt -->
+                <button class="action-icon-btn" id="shortcutMenuBtn" title="Chạy phím tắt">
+                    <img src="image/shortcus.png" alt="Phím tắt" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2334C759%22><path d=%22M13 2.05v3.03c3.39.49 6 3.39 6 6.92 0 3.87-3.13 7-7 7s-7-3.13-7-7c0-3.53 2.61-6.43 6-6.92V2.05C6.06 2.56 1 7.91 1 14.01 1 20.63 6.37 26 12.99 26 19.63 26 25 20.63 25 14.01 25 7.91 19.94 2.56 13 2.05zM11 6h2v8h-2V6z%22/></svg>'">
                 </button>
             </div>
 
@@ -417,6 +509,12 @@
         const userImagePreview = document.getElementById('userImagePreview');
         const extractedGrid20 = document.getElementById('extractedGrid20');
 
+        // Các biến cho Popup Shortcut
+        const shortcutModal = document.getElementById('shortcutModal');
+        const shortcutMenuBtn = document.getElementById('shortcutMenuBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const shortcutListContainer = document.getElementById('shortcutListContainer');
+
         let currentBaseColor = { r: 251, g: 239, b: 179 }; // #FBEFB3
         let brightnessFactor = 1.0;
         let alpha = 1.0;
@@ -425,8 +523,8 @@
         let touchStartPos = null;
         let toastTimeout = null;
 
-        function showToast(hex) {
-            toastBanner.textContent = `Đã sao chép thành công mã màu ${hex}`;
+        function showToast(message) {
+            toastBanner.textContent = message;
             toastBanner.classList.add('show');
             if (toastTimeout) clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
@@ -465,11 +563,11 @@
         function copyColorHex(r, g, b) {
             const hex = rgbToHex(r, g, b);
             navigator.clipboard.writeText(hex).then(() => {
-                showToast(hex);
+                showToast(`Đã sao chép thành công mã màu ${hex}`);
                 colorSwatch.classList.add('copied');
                 setTimeout(() => colorSwatch.classList.remove('copied'), 300);
             }).catch(() => {
-                showToast(hex);
+                showToast(`Đã sao chép thành công mã màu ${hex}`);
             });
         }
 
@@ -653,6 +751,45 @@
             }
         }
 
+        // Tải danh sách phím tắt từ data/shortcus.json
+        async function fetchShortcuts() {
+            try {
+                const response = await fetch('./data/shortcus.json');
+                const data = await response.json();
+                renderShortcutList(data.shortcuts || []);
+            } catch (err) {
+                shortcutListContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); font-size:13px; padding:10px;">Không tìm thấy tệp data/shortcus.json</div>';
+            }
+        }
+
+        function renderShortcutList(shortcuts) {
+            shortcutListContainer.innerHTML = '';
+            if (shortcuts.length === 0) {
+                shortcutListContainer.innerHTML = '<div style="text-align:center; color:var(--text-secondary); font-size:13px; padding:10px;">Chưa có phím tắt nào</div>';
+                return;
+            }
+            shortcuts.forEach(sc => {
+                const item = document.createElement('div');
+                item.className = 'shortcut-row';
+                item.innerHTML = `<span>${sc.icon || '⚡'} ${sc.displayName || sc.name}</span> <span style="font-size:12px; color:var(--text-secondary);">Chạy ➔</span>`;
+                
+                item.addEventListener('click', () => {
+                    const adjusted = getAdjustedColor();
+                    const hexColor = rgbToHex(adjusted.r, adjusted.g, adjusted.b);
+                    
+                    showToast(`Đã gửi ${hexColor} đến ${sc.displayName || sc.name}`);
+                    shortcutModal.classList.remove('show');
+
+                    // Gọi Apple Shortcut qua URL Scheme
+                    setTimeout(() => {
+                        const shortcutUrl = `shortcuts://run-shortcut?name=${encodeURIComponent(sc.name)}&input=text&text=${encodeURIComponent(hexColor)}`;
+                        window.location.href = shortcutUrl;
+                    }, 400);
+                });
+                shortcutListContainer.appendChild(item);
+            });
+        }
+
         function init() {
             startBtn.addEventListener('click', () => {
                 introScreen.classList.add('fade-out');
@@ -686,7 +823,7 @@
             brightnessSlider.addEventListener('input', (e) => { brightnessFactor = parseFloat(e.target.value); updatePanel(); });
             alphaSlider.addEventListener('input', (e) => { alpha = parseFloat(e.target.value); updatePanel(); });
 
-            // Xử lý khi chạm vào ô màu xem trước hoặc chữ "chọn màu" bên dưới -> Sao chép mã màu
+            // Xử lý khi chạm vào ô màu xem trước hoặc chữ "chọn màu"
             const handleSwatchClick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -697,7 +834,7 @@
             swatchWrapper.addEventListener('click', handleSwatchClick);
             swatchWrapper.addEventListener('touchend', handleSwatchClick);
 
-            // Nút "Chọn từ ảnh"
+            // Nút "Chọn từ ảnh" (Nút 1)
             pickFromImageBtn.addEventListener('click', () => {
                 imageFileInput.click();
             });
@@ -739,7 +876,7 @@
                 reader.readAsDataURL(file);
             });
 
-            // Xử lý chọn màu hệ thống trực tiếp từ input[type=color] phủ trên nút
+            // Nút "Màu hệ thống" (Nút 2)
             nativeColorInput.addEventListener('input', (e) => {
                 let val = e.target.value;
                 if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
@@ -749,6 +886,22 @@
                     setCurrentBaseColor(r, g, b);
                     copyColorHex(r, g, b);
                     addToHistory();
+                }
+            });
+
+            // Nút "Chạy phím tắt" (Nút 3) -> Mở Modal Popup
+            shortcutMenuBtn.addEventListener('click', () => {
+                fetchShortcuts();
+                shortcutModal.classList.add('show');
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                shortcutModal.classList.remove('show');
+            });
+
+            shortcutModal.addEventListener('click', (e) => {
+                if (e.target === shortcutModal) {
+                    shortcutModal.classList.remove('show');
                 }
             });
 
@@ -792,7 +945,7 @@
                         copyColorHex(currentBaseColor.r, currentBaseColor.g, currentBaseColor.b);
                         addToHistory();
                     }
-                    mouseDownPos = null;
+                    mouseDownPos = false;
                     hideCrosshair();
                 }
             });
